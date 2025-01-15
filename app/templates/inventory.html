@@ -262,8 +262,8 @@
 
             // first pass, check each row and determine if columns match
             for (let rowCount = 1; rowCount < rows.length; rowCount++) {
-                row = rows[rowCount];
-                cells = row.cells;
+                let row = rows[rowCount];
+                let cells = row.cells;
 
                 // ignore unchecked rows, they don't matter for comparison
                 compareCheck = document.getElementById("compare-" + rowCount);
@@ -283,7 +283,7 @@
                     // a match if a no match hasn't happened.
                     else {
                         if ((matchTo[columnCount - 1] === cells[columnCount].innerText) &&
-                            (matchTo[columnCount - 1] !== "nomatch")) {
+                            (matches[columnCount - 1] !== "nomatch")) {
                             matches[columnCount - 1] = "match";
                         } else {
                             matches[columnCount - 1] = "nomatch";
