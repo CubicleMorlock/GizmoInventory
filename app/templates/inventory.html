@@ -380,7 +380,7 @@
     <table id="inventory-table" class="inventory">
         <thead>
             <th class="wide">Product<span>&nbsp;</span> 
-            <input type="submit" id="submit" value="Add Product" formaction="add">
+            <input type="submit" id="submit" value="Add Product" formaction="add"><br>&nbsp;
             </th>
             <th>Department<br>
                 <select id="department-filter" name="department-filter" onchange="filter(false)" class="normal">
@@ -406,7 +406,7 @@
                     {% endfor %}
                 </select>
             </th>
-            <th class="short">Stock Date</th>
+            <th class="short">Stock Date<br>&nbsp;</th>
             <th class="short">Compare<br>
                 <input type="checkbox" id="compare-all" value="compare-all" onclick="handleCompareAll(this)">
             </th>
