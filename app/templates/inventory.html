@@ -1,0 +1,449 @@
+{% extends "root.html" %}
+
+{% block content %}
+    <style>
+        tr.normal {
+            outline: thin solid;
+        }
+
+        tr.noborder {
+        }
+        
+        table.inventory {
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        table.button {
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        th.normal {
+            width: 20%
+        }
+
+        th.wide {
+            width: 40%
+        }
+
+        th.short {
+            width: 10%
+        }
+    
+        td.center {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        td.actionable {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            color: blue;
+        }
+
+        td.normal {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+        }
+
+        td.match {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            outline: 2px solid green;
+            outline-offset: -2px;
+        }
+
+        td.nomatch {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            outline: 2px solid red;
+            outline-offset: -2px;
+        }
+
+        tr.message {
+            outline: none;
+        }
+
+        td.message {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            border: none;
+            text-align: center;
+            color: {{ message_color }};
+        }
+
+        td.button {
+            text-align: left;
+        }
+
+        td.closebutton {
+            width: 0.1%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        input.invisible {
+            display: none;
+        }
+
+        .textonlybutton {
+            background:none;
+            border:none;
+            margin:0;
+            padding:0;
+            cursor: pointer;
+            color: blue;
+        }
+
+        button.importexport {
+            padding: 1px 6px;
+            border: 1px outset buttonborder;
+            border-radius: 3px;
+            color: buttontext;
+            background-color: buttonface;
+            text-decoration: none;
+        }
+        input.import {
+            content: 'Import';
+        }
+
+    </style>
+
+    <script>
+        /**
+         * Handle anything to run on first page load.
+         *
+         */
+        function firstLoad() {
+            filter(true);
+        }
+
+        /**
+         * Handle the edit of a product submit selection.
+         *
+         * @param {element} productSubmit - product submit element clicked
+         */
+        function handleEdit(productSubmit) {
+            let editForm = document.getElementById("edit-form");
+            editForm.action = "edit";
+            editForm.submit();
+        }
+
+        /**
+         * Set all compare checks in table.
+         */
+        function setAllCompares() {
+            let inventoryTable = document.getElementById("inventory-table");
+
+            let rows = inventoryTable.rows;
+
+            for (let rowCount = 1; rowCount < rows.length; rowCount++) {
+                // only set on displayed rows
+                if (rows[rowCount].style.display !== "none") {
+                    compareCheck = document.getElementById("compare-" + rowCount);
+                    compareCheck.checked = true;
+                }
+            }
+        }
+
+        /**
+         * Clear all compare checks in table.
+         */
+        function clearAllCompares() {
+            let inventoryTable = document.getElementById("inventory-table");
+
+            let rows = inventoryTable.rows;
+
+            for (let rowCount = 1; rowCount < rows.length; rowCount++) {
+                compareCheck = document.getElementById("compare-" + rowCount);
+                compareCheck.checked = false;
+            }
+        }
+
+        /**
+         * Handle the set/unset all compare checkboxs in table, then run the 
+         * compare.
+         *
+         * @param {element} compareAllCheck - element for compare all checkbox.
+         */
+        function handleCompareAll(compareAllCheck) {
+            if (compareAllCheck.checked) {
+                setAllCompares();
+            } else {
+                clearAllCompares();
+            }
+            
+            // after setting the checks, run the comparison
+            compareRows(false);
+        }
+
+        /**
+         * Handle the compare row check or uncheck, then run the compare.
+         *
+         * @param {element} compareCheck - element for compare row checkbox.
+         */
+        function handleCompare(compareCheck) {
+            // extract the row index from the checkbox id
+            rowIndex = parseInt(compareCheck.id.substring(compareCheck.id.indexOf("-") + 1));
+
+            // clear the unchecked row from comparison shading
+            if (!compareCheck.checked) {
+                clearCompareRow(rowIndex);
+            }
+
+            compareRows(false);
+        }
+        
+        /**
+         * Clear all comparison shading on table row.
+         *
+         * @param {integer} rowIndex - row to clear shading on.
+         */
+        function clearCompareRow(rowIndex) {
+            let inventoryTable = document.getElementById("inventory-table");
+
+            let rows = inventoryTable.rows;
+
+            cells = rows[rowIndex].cells;
+            for (let count = 1; count < 4; count++) {
+                cells[count].className = "normal";
+            }
+        }
+
+        /**
+         * Compare all table rows, marking all compare checked rows matching
+         * and unmatching columns with color shading.
+         *
+         * All column values must match for all checked rows to shade
+         * as match, even if some rows match.
+         *
+         * Unchecked rows are shading cleared.
+         */
+        function compareRows(firstLoad = false) {
+            // default style is normal (no shading) for each comparable column
+            let matches = [
+                "normal",
+                "normal",
+                "normal",
+            ];
+
+            // store the value to compare to for each column
+            let matchTo = [
+                "",
+                "",
+                "",
+            ];
+
+            let inventoryTable = document.getElementById("inventory-table");
+
+            let rows = inventoryTable.rows;
+
+            // first pass, check each row and determine if columns match
+            for (let rowCount = 1; rowCount < rows.length; rowCount++) {
+                row = rows[rowCount];
+                cells = row.cells;
+
+                // ignore unchecked rows, they don't matter for comparison
+                compareCheck = document.getElementById("compare-" + rowCount);
+                if (!compareCheck.checked) {
+                    continue;
+                }
+                
+                // for each column...
+                for (let columnCount = 1; columnCount < 4; columnCount++) {
+                    // ...if there is nothing to match to, this is the first
+                    // comparison row, it becomes the comparison point...
+                    if (!matchTo[columnCount - 1]) {
+                        matchTo[columnCount - 1] = cells[columnCount].innerText;
+                    }
+                    // ...else compare this column in this row, if it doesn't
+                    // match then the entire column is a no match, else its
+                    // a match if a no match hasn't happened.
+                    else {
+                        if ((matchTo[columnCount - 1] === cells[columnCount].innerText) &&
+                            (matchTo[columnCount - 1] !== "nomatch")) {
+                            matches[columnCount - 1] = "match";
+                        } else {
+                            matches[columnCount - 1] = "nomatch";
+                        }
+                    }
+                }
+            }
+
+            // second pass, now set the match / no match shadings for
+            // each checked column
+            for (let rowCount = 1; rowCount < rows.length; rowCount++) {
+                row = rows[rowCount];
+                cells = row.cells;
+
+                compareCheck = document.getElementById("compare-" + rowCount);
+                for (let columnCount = 1; columnCount < 4; columnCount++) {
+                    // if row is unchecked, clear any shading...
+                    if (!compareCheck.checked) {
+                        cells[columnCount].className = "normal";
+                    }
+                    // ...else set the shading to match state
+                    else {
+                        cells[columnCount].className = matches[columnCount - 1];
+                    }
+                }
+            }
+
+            // on compare, clear any old message
+            if (!firstLoad) {
+                let message = document.getElementById("message");
+                message.innerHTML = "";
+            }
+        }
+
+        /**
+         * Apply filters to all rows, hiding or showing each row based
+         * on whether it matches all selected filters.
+         *
+         * @param {boolean} firstload - first time loading the page
+         */
+        function filter(firstload = false) {
+            let filterDepartmentSelect = document.getElementById("department-filter");
+            let filterDepartment = filterDepartmentSelect.options[filterDepartmentSelect.selectedIndex].value;
+            let filterPriceSelect = document.getElementById("price-filter");
+            let filterPrice = filterPriceSelect.options[filterPriceSelect.selectedIndex].value;
+            let filterQuantitySelect = document.getElementById("quantity-filter");
+            let filterQuantity = filterQuantitySelect.options[filterQuantitySelect.selectedIndex].value;
+            let inventoryTable = document.getElementById("inventory-table");
+
+            let rows = inventoryTable.rows;
+            // loop through the rows, skipping the first (header) row, using
+            // a counter loop instead of for each because index is needed
+            for (let count = 1; count < rows.length; count++) {
+                row = rows[count];
+                cells = row.cells;
+                cellDepartment = cells[1].innerText;
+                cellPrice = cells[2].innerText;
+                cellQuantity = cells[3].innerText;
+      
+                // if all filters match, show the row...
+                if ((!filterDepartment || cellDepartment === filterDepartment) &&
+                    (!filterPrice || cellPrice === filterPrice) &&
+                    (!filterQuantity || cellQuantity === filterQuantity)) {
+                    row.style.display = "";
+                }
+                // ...else hide the row, and clear any comparison branding
+                else {
+                    row.style.display = "none";
+                    clearCompareRow(count);
+                    compareCheck = document.getElementById("compare-" + count);
+                    compareCheck.checked = false;
+                }
+            }
+
+            // on filter, clear any old message
+            if (!firstload) {
+                let message = document.getElementById("message");
+                message.innerHTML = ""
+            }
+
+            // need to re-run the comparison, on just the displayed rows
+            compareRows(firstload);
+        }
+
+        window.onload = firstLoad;
+    </script>
+
+    <table id="message-table" class="inventory">
+        <tr class="message">
+            <td id="message" class="message">{{ message }}</td>
+    </tr>
+    </table>
+    <form id="edit-form" method="post">
+    <table id="inventory-table" class="inventory">
+        <thead>
+            <th class="wide">Product<span>&nbsp;</span> 
+            <input type="submit" id="submit" value="Add Product" formaction="add">
+            </th>
+            <th>Department<br>
+                <select id="department-filter" name="department-filter" onchange="filter(false)" class="normal">
+                    <option value=""></option>
+                    {% for filter in department_filters %}
+                    <option value="{{ filter }}" {% if filter == department_filter %}selected{% endif %}>{{ filter }}</option>
+                    {% endfor %}
+                </select>
+            </th>
+            <th>Price<br>
+                <select id="price-filter" name="price-filter" onchange="filter(false)" class="short">
+                    <option value=""></option>
+                    {% for filter in price_filters %}
+                    <option value="{{ filter }}" {% if filter == price_filter %}selected{% endif %}>{{ filter }}</option>
+                    {% endfor %}
+                </select>
+            </th>
+            <th>Quantity<br>
+                 <select id="quantity-filter" name="quantity-filter" onchange="filter(false)" class="short">
+                    <option value=""></option>
+                    {% for filter in quantity_filters %}
+                    <option value="{{ filter }}" {% if filter == quantity_filter %}selected{% endif %}>{{ filter }}</option>
+                    {% endfor %}
+                </select>
+            </th>
+            <th class="short">Stock Date</th>
+            <th class="short">Compare<br>
+                <input type="checkbox" id="compare-all" value="compare-all" onclick="handleCompareAll(this)">
+            </th>
+        </thead>
+        <tbody>
+            {% for item in inventory %}
+            <tr class="normal">
+                <td class="normal"><input type="submit" value="{{ item.product }}" name="edit-submit" class="textonlybutton" onclick="handleEdit(this)"/></td>
+                <td class="normal">{{ item.department }}</td>
+                <td class="normal">{{ item.price }}</td>
+                <td class="normal">{{ item.quantity }}</td>
+                <td class="normal">{{ item.stock_date }}</td>
+                <td class="center"><input type="checkbox" id="compare-{{ loop.index }}" value="compare-{{ loop.index }}" onclick="handleCompare(this)"></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </form>
+{% endblock %}
+
+{% block addednavigation %}
+    <style>
+        form.embedded {
+            display: inline-block;
+        }
+
+        td.importexport {
+            text-align: right;
+        }
+    </style>
+    <td class="importexport">
+        <form id="import-form" enctype="multipart/form-data" method="post" class="embedded" action="import">
+        <input type="file" id="importselect" name="import" value="" accept="application/json" class="invisible" onchange="this.form.submit()">
+        <button type="button" class="importexport" onclick="document.getElementById('importselect').click();">Import</button>
+        </form>
+        <form id="export-form" enctype="multipart/form-data" method="post" class="embedded" action="export">
+        <button type="submit" id="export" class="importexport">Export</button>
+        </form>
+    </td>
+{% endblock %}

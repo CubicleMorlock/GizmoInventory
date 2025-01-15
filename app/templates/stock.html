@@ -1,0 +1,84 @@
+{% extends "root.html" %}
+
+{% block content %}
+    <style>
+        tr.stock {
+            outline: thin solid;
+        }
+        
+        table.stock {
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        th.normal {
+            width: 20%
+        }
+
+        th.short {
+            width: 10%
+        }
+    
+        td.center {
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        td.normal {
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+        }
+
+        td.failure {
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            color: red;
+        }
+
+        td.warning {
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            color: #FFC300;
+        }
+
+        td.stable {
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            color: green;
+        }
+    </style>
+
+    <script>
+    </script>
+
+    <table id="stockreport-table" class="stock">
+        <thead>
+            <th class="normal">Product</th>
+            <th class="short">Quantity<br>
+            <th class="short">Stock Recommendation</th>
+        </thead>
+        <tbody>
+            {% for item in inventory %}
+            <tr class="stock">
+                <td class="normal">{{ item.product }}</td>
+                <td class="normal">{{ item.quantity }}</td>
+                <td {% if item.quantity < 2 %}
+                    class="failure">Needs Restock
+                    {% elif item.quantity < 5 %}
+                    class="warning">Stock Low
+                    {% else %}
+                    class="stable">Stock Good
+                {% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

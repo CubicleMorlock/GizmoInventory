@@ -1,0 +1,129 @@
+{% extends "root.html" %}
+
+{% block content %}
+    <style>
+        td.add,
+        tr.add {
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+        }
+        
+        table.add {
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        td.key {
+            width: 20%;
+        }
+        
+        td.value {
+            width: 80%;
+        }
+
+        td.error {
+            color: red;
+        }
+        
+        td.button {
+            text-align: right;
+        }
+    </style>
+
+    <script>
+        /**
+         * polyfill for browsers not supporting Number.isInteger()
+         */
+        Number.isInteger = Number.isInteger || function(value) {
+            return typeof value === "number" && 
+               isFinite(value) && 
+               Math.floor(value) === value;
+        };
+        
+        /**
+         * Validate form values.
+         */
+        function validateForm() {
+            let product = document.getElementById("product").value;
+            let productErrorMessage = document.getElementById("error-product");
+            let department = document.getElementById("department").value;
+            let departmentErrorMessage = document.getElementById("error-department");
+            let price = document.getElementById("price").value;
+            let priceErrorMessage = document.getElementById("error-price");
+            let quantity = document.getElementById("quantity").value;
+            let quantityErrorMessage = document.getElementById("error-quantity");
+            let valid = true;
+
+            if (!product) {
+                valid = false;
+                productErrorMessage.textContent = "Product must not be empty";
+            } else {
+                productErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            if (!department) {
+                valid = false;
+                departmentErrorMessage.textContent = "Department must not be empty";
+            } else {
+                departmentErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            if (!quantity || !Number.isInteger(Number(quantity)) || Number(quantity) < 0) {
+                valid = false;
+                quantityErrorMessage.textContent = "Quantity must be a non-negative number";
+            } else {
+                quantityErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            if (!price || isNaN(Number(price)) || Number(price) < 0) {
+                valid = false;
+                priceErrorMessage.textContent = "Price must be a non-negative integer";
+            } else {
+                priceErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            return valid;
+        }
+    </script>
+
+    <form action="add_product" id="add-product" method="post">
+        <input type="hidden" id="department-filter" name="department-filter" value="{{ department_filter }}">
+        <input type="hidden" id="price-filter" name="price-filter" value="{{ price_filter }}">
+        <input type="hidden" id="quantity-filter" name="quantity-filter" value="{{ quantity_filter }}">
+
+        <table class="add">
+            <tr class="add">
+                <td class="key"><b>Product</b></td>
+                <td class="value"><input type="text" id="product" name="product" value="" size="64"></td>
+            </tr>
+            <tr class="add"><td class="add"></td><td id="error-product" class="error">&nbsp;</td></tr>
+            <tr class="add">
+                <td class="key"><b>Department</b></td>
+                <td class="value"><input type="text" id="department" name="department" value="" size="64"></td>
+            </tr>
+            <tr class="add"><td class="add"></td><td id="error-department" class="error">&nbsp;</td></tr>
+            <tr class="add">
+                <td class="key"><b>Price</b></td>
+                <td class="value"><input type="text" id="price" name="price" value="" size="64"></td>
+            </tr>
+            <tr class="add"><td class="add"></td><td id="error-price" class="error">&nbsp;</td></tr>
+            <tr class="add">
+                <td class="key"><b>Quantity</b></td>
+                <td class="value"><input type="text" id="quantity" name="quantity" value="" size="64"></td>
+            </tr>
+            <tr class="add"><td></td><td id="error-quantity" class="error">&nbsp;</td></tr>
+            <tr class="add"><td></td><td class="button">
+                <input type="submit" id="submit" value="Submit" onclick="return validateForm()">
+                <input type="submit" id="cancel" value="Cancel" formaction ="cancel">
+            </td></tr>
+        </table>
+    </form>
+
+{% endblock %}

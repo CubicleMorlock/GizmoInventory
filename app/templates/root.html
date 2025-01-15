@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Gizmo Outlet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geostar&display=swap" rel="stylesheet">
+
+    <style>
+        a.button {
+            padding: 1px 6px;
+            border: 1px outset buttonborder;
+            border-radius: 3px;
+            color: buttontext;
+            background-color: buttonface;
+            text-decoration: none;
+        }
+
+        td.navigation {
+            border: none;
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+        }
+
+        tr.navigation {
+            outline: none;
+        }
+
+        table.navigation {
+            border: none;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        td.banner {
+            width: 0.1%;
+            border: none;
+            border-collapse: collapse;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        tr.banner {
+            outline: none;
+        }
+
+        table.banner {
+            border: none;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        .geostar-regular {
+            font-family: "Geostar", serif;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 30px;
+            text-align: left;
+        }
+
+        span.bold {
+            font-weight: 700;
+            font-size: 30px;
+            text-align: left;
+        }
+
+        img.logo {
+            width: 120px;
+            height: auto;
+        }
+    </style>
+
+    <script>
+    </script>
+</head>
+
+<body>
+    <div><table class="banner">
+        <tr class="banner"><td class="banner"><span><img class="logo" src="/static/Rubenvent1.jpg"></span></td><td text-align: left;><span class="geostar-regular">Gizmo</span> <span class="bold">Outlet</span></td></tr>
+    </table></div>
+    <div><table class="navigation">
+        <tr class="navigation">
+            <td class="navigation"><a href="/stock_report" class="button">Stock Report</a><a href="/inventory" class="button">Manage Inventory</a></td>{% block addednavigation %}{% endblock %}
+        </tr>
+    </table></div>
+    <br>
+    {% block content %}{% endblock %}
+</body>
+
+</html>

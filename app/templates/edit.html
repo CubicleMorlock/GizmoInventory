@@ -1,0 +1,177 @@
+{% extends "root.html" %}
+
+{% block content %}
+    <style>
+        td.edit,
+        tr.edit {
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+        }
+        
+        table.edit {
+            border-collapse: collapse;
+            padding: 6px;
+            margin-top: 10px;
+            vertical-align: top;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        td.key {
+            width: 20%;
+        }
+        
+        td.value {
+            width: 80%;
+        }
+
+        td.error {
+            color: red;
+        }
+        
+        td.button {
+            text-align: right;
+        }
+    </style>
+
+    <script>
+        /**
+         * polyfill for browsers not supporting Number.isInteger()
+         */
+        Number.isInteger = Number.isInteger || function(value) {
+            return typeof value === "number" && 
+               isFinite(value) && 
+               Math.floor(value) === value;
+        };
+        
+        /**
+         * Mode change to update, opening up fields for modification and disabling delete.
+         */
+        function enableUpdate() {
+            let inputs = document.getElementById("edit-product").getElementsByTagName("input");
+            for (const input of inputs) {
+                if (input.id !== "product") {
+                    input.disabled = false;
+                }
+            }
+            let deleteButton = document.getElementById("delete");
+            deleteButton.hidden = true;
+            let updateButton = document.getElementById("update");
+            updateButton.hidden = true;
+            let submitButton = document.getElementById("submit");
+            submitButton.hidden = false;
+        }
+
+        /**
+         * Validate form values.
+         */
+        function validateForm() {
+            let product = document.getElementById("product").value;
+            let productErrorMessage = document.getElementById("error-product");
+            let department = document.getElementById("department").value;
+            let departmentErrorMessage = document.getElementById("error-department");
+            let price = document.getElementById("price").value;
+            let priceErrorMessage = document.getElementById("error-price");
+            let quantity = document.getElementById("quantity").value;
+            let quantityErrorMessage = document.getElementById("error-quantity");
+            
+            let valid = true;
+
+            if (!product) {
+                valid = false;
+                productErrorMessage.textContent = "Product must not be empty";
+            } else {
+                productErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            if (!department) {
+                valid = false;
+                departmentErrorMessage.textContent = "Department must not be empty";
+            } else {
+                departmentErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            if (!quantity || !Number.isInteger(Number(quantity)) || Number(quantity) < 0) {
+                valid = false;
+                quantityErrorMessage.textContent = "Quantity must be a non-negative number";
+            } else {
+                quantityErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            if (!price || isNaN(Number(price)) || Number(price) < 0) {
+                valid = false;
+                priceErrorMessage.textContent = "Price must be a non-negative integer";
+            } else {
+                priceErrorMessage.innerHTML = "&nbsp;";
+            }
+
+            // enable product field, so it returns in the form data
+            if (valid) {
+                let productInput = document.getElementById("product");
+                if (confirm("Confirm update on " + productInput.value)) {
+                    productInput.disabled = false;
+                } else {
+                    valid = false;
+                } 
+            }
+
+            return valid;
+        }
+
+        /**
+         * Handle delete.
+         */
+        function handleDelete() {
+            // enable product field, so it returns in the form data
+            let productInput = document.getElementById("product");
+
+            if (confirm("Confirm delete on " + productInput.value)) {
+                productInput.disabled = false;
+
+                return true;
+            } else {
+                return false;
+            } 
+        }
+    </script>
+
+    <form action="edit_product" id="edit-product" method="post">
+        <input type="hidden" id="department-filter" name="department-filter" value="{{ department_filter }}">
+        <input type="hidden" id="price-filter" name="price-filter" value="{{ price_filter }}">
+        <input type="hidden" id="quantity-filter" name="quantity-filter" value="{{ quantity_filter }}">
+
+        <table class="edit">
+            <tr class="edit">
+                <td class="key"><b>Product</b></td>
+                <td class="value"><input type="text" id="product" name="product" value="{{ item.product }}" size="64" disabled></td>
+            </tr>
+            <tr class="edit"><td class="edit"></td><td id="error-product" class="error">&nbsp;</td></tr>
+            <tr class="edit">
+                <td class="key"><b>Department</b></td>
+                <td class="value"><input type="text" id="department" name="department" value="{{ item.department }}" size="64" disabled></td>
+            </tr>
+            <tr class="edit"><td class="edit"></td><td id="error-department" class="error">&nbsp;</td></tr>
+            <tr class="edit">
+                <td class="key"><b>Price</b></td>
+                <td class="value"><input type="text" id="price" name="price" value="{{ item.price }}" size="64" disabled></td>
+            </tr>
+            <tr class="edit"><td class="edit"></td><td id="error-price" class="error">&nbsp;</td></tr>
+            <tr class="edit">
+                <td class="key"><b>Quantity</b></td>
+                <td class="value"><input type="text" id="quantity" name="quantity" value="{{ item.quantity }}" size="64" disabled></td>
+            </tr>
+            <tr class="edit"><td></td><td id="error-quantity" class="error">&nbsp;</td></tr>
+            <tr class="edit"><td></td><td class="button">
+                <input type="submit" id="submit" value="Submit" onclick="return validateForm()" hidden>
+                <input type="button" id="update" value="Update" onclick="enableUpdate()">
+                <input type="submit" id="delete" value="Delete" formaction="delete_product" onclick="return handleDelete()">
+                <input type="submit" id="cancel" value="Cancel" formaction ="cancel">
+            </td></tr>
+        </table>
+    </form>
+
+{% endblock %}
+
