@@ -24,7 +24,11 @@ def inventory_export():
 
 @inventory_app.route("/import", methods=['POST'])
 def inventory_import():
-    """Route for doing inventory import."""
+    """Route for doing inventory import.
+
+       Read from import stream into a JSON object, then hand to Data class to
+       selectively insert/update contents.
+    """
 
     inventory_import = request.files.get('import')
     # would NEVER do this in a production / public
@@ -47,6 +51,7 @@ def inventory_import():
                 message = 'Data import failed'
                 message_color = 'red'
 
+    # should do more granular exception handling, and error details
     except Exception as error:
         message = 'Invalid import data format'
         message_color = 'red'
@@ -58,19 +63,24 @@ def inventory_import():
 def edit():
     """Route for building the edit product screen."""
 
+    # get previously chosen filters, to re-create them in
+    # inventory page
     department_filter = request.values.get('department-filter')
     price_filter = request.values.get('price-filter')
     quantity_filter = request.values.get('quantity-filter')
 
     with Data() as data_handle:
+        # clicked item is the product to load edit page for
         item = data_handle.fetch_product(request.values.get('edit-submit'))
 
+        # this shouldn't happen, but handle it anyway
         if not item:
             return redirect(url_for('inventory_manage', 
                 department_filter = department_filter,
                 price_filter = price_filter,
                 quantity_filter = quantity_filter))
 
+        # render edit page
         return render_template(
             'edit.html',
             item = item[0],
@@ -85,10 +95,14 @@ def edit_product():
 
        Routes back to the inventory page, with the previous filters.
     """
+
+    # get previously chosen filters, to re-create them in
+    # inventory page
     department_filter = request.values.get('department-filter')
     price_filter = request.values.get('price-filter')
     quantity_filter = request.values.get('quantity-filter')
 
+    # get form values for the edit
     product = request.values.get('product')
     department = request.values.get('department')
     price = request.values.get('price')
@@ -97,6 +111,7 @@ def edit_product():
     with Data() as data_handle:
         data_handle.update_product(product, department, price, quantity)
 
+    # send user back to inventory page, with update message
     return redirect(url_for('inventory_manage', 
         message = f'Updated {product} in inventory', message_color = 'blue',
         department_filter = department_filter, price_filter = price_filter,
@@ -109,15 +124,19 @@ def delete_product():
        Routes back to the inventory page, with the previous filters.
     """
 
+    # get previously chosen filters, to re-create them in
+    # inventory page
     department_filter = request.values.get('department-filter')
     price_filter = request.values.get('price-filter')
     quantity_filter = request.values.get('quantity-filter')
 
+    # get form values for the delete
     product = request.values.get('product')
 
     with Data() as data_handle:
         data_handle.delete_product(product)
 
+    # send user back to inventory page, with delete message
     return redirect(url_for('inventory_manage', 
         message = f'Deleted {product} from inventory', message_color = 'blue',
         department_filter = department_filter, price_filter = price_filter,
@@ -127,10 +146,13 @@ def delete_product():
 def add():
     """Route for building the add product screen."""
 
+    # get previously chosen filters, to re-create them in
+    # inventory page
     department_filter = request.values.get('department-filter')
     price_filter = request.values.get('price-filter')
     quantity_filter = request.values.get('quantity-filter')
 
+    # render add page
     return render_template(
         'add.html',
         department_filter = request.values.get('department-filter'),
@@ -144,10 +166,14 @@ def add_product():
 
        Routes back to the inventory page, with the previous filters.
     """
+
+    # get previously chosen filters, to re-create them in
+    # inventory page
     department_filter = request.values.get('department-filter')
     price_filter = request.values.get('price-filter')
     quantity_filter = request.values.get('quantity-filter')
 
+    # get form values for the add
     product = request.values.get('product')
     department = request.values.get('department')
     price = request.values.get('price')
@@ -158,14 +184,17 @@ def add_product():
     with Data() as data_handle:
         item = data_handle.fetch_product(product)
 
+        # if product name already exists, reject the add...
         if item:
             message = f'{product} already exists in inventory'
             message_color = 'red'
+        # ...else add the new product
         else:
             message = f'Added {product} to inventory'
             message_color = 'blue'
             data_handle.insert_product(product, department, price, quantity)
 
+    # send user back to inventory page, with add or error message
     return redirect(url_for('inventory_manage', 
         message = message, message_color = message_color,
         department_filter = department_filter, price_filter = price_filter,
@@ -180,6 +209,8 @@ def cancel():
        This should probably be done purely client side.
     """
 
+    # get previously chosen filters, to re-create them in
+    # inventory page
     department_filter = request.values.get('department-filter')
     price_filter = request.values.get('price-filter')
     quantity_filter = request.values.get('quantity-filter')
@@ -194,12 +225,17 @@ def inventory_manage():
        set filters.
     """
 
+    # get previously chosen filters, to re-create them in
+    # this page
     department_filter = request.args.get('department_filter', '')
     price_filter = request.args.get('price_filter', 0)
     quantity_filter = request.args.get('quantity_filter', 0)
+
+    # pull any operation status messages for user attention
     message = request.args.get('message', '')
     message_color = request.args.get('message_color', '')
 
+    # type conversion from HTML stringification back to numeric values, might not be necessary
     if price_filter:
         price_filter = float(price_filter)
     if quantity_filter:
@@ -208,9 +244,10 @@ def inventory_manage():
     with Data() as data_handle:
         inventory = sorted(data_handle.fetch_inventory(), key=lambda item: item['product'])
 
-        department_filters = sorted(set([str(item['department']) for item in inventory]))
-        price_filters = sorted(set([str(item['price']) for item in inventory]))
-        quantity_filters = sorted(set([str(item['quantity']) for item in inventory]))
+        # create filters lists from unique values in the database
+        department_filters = sorted(set([item['department'] for item in inventory]))
+        price_filters = sorted(set([item['price'] for item in inventory]))
+        quantity_filters = sorted(set([item['quantity'] for item in inventory]))
 
         return render_template(
             'inventory.html',
